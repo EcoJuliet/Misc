@@ -28,6 +28,10 @@ export async function renderRotinaDetalhe(container, { id }) {
     ])
   );
 
+  if (routine.notas) {
+    container.appendChild(el('p', { class: 'muted' }, routine.notas));
+  }
+
   const list = el('div', { class: 'exercise-list' });
   container.appendChild(list);
 
@@ -102,12 +106,16 @@ export async function renderRotinaDetalhe(container, { id }) {
 
   async function renameRoutine() {
     const result = await openModal({
-      title: 'Renomear rotina',
-      fields: [{ name: 'nome', label: 'Nome', value: routine.nome }],
+      title: 'Editar rotina',
+      fields: [
+        { name: 'nome', label: 'Nome', value: routine.nome },
+        { name: 'notas', label: 'Observação (opcional)', value: routine.notas || '' },
+      ],
       confirmLabel: 'Salvar',
     });
     if (!result || !result.nome) return;
     routine.nome = result.nome;
+    routine.notas = result.notas || undefined;
     routine.updatedAt = nowIso();
     await put('routines', routine);
     renderRotinaDetalhe(container, { id });
