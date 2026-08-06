@@ -218,6 +218,25 @@ button {
   flex-basis: 100%;
 }
 
+.exercise-desc-preview {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exercise-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exercise-title-row .exercise-name-btn {
+  flex: 1;
+  flex-basis: auto;
+}
+
 .row-actions {
   display: flex;
   gap: 6px;
@@ -299,6 +318,14 @@ button {
 
 .finish-btn {
   margin-top: 8px;
+}
+
+.session-card-done {
+  opacity: 0.5;
+}
+
+.session-card-done .exercise-name-btn {
+  text-decoration: line-through;
 }
 
 .timer-bar {
@@ -385,6 +412,12 @@ button {
 }
 
 .modal-card h2 {
+  margin: 0;
+}
+
+.modal-description {
+  white-space: pre-wrap;
+  line-height: 1.5;
   margin: 0;
 }
 
