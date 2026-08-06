@@ -49,6 +49,15 @@ export function openModal({ title, fields = [], confirmLabel = 'OK', cancelLabel
     const overlay = el('div', { class: 'modal-overlay' });
 
     const inputs = fields.map((f) => {
+      if (f.multiline) {
+        const textarea = el('textarea', {
+          id: `modal-field-${f.name}`,
+          placeholder: f.placeholder ?? '',
+          rows: f.rows || 6,
+        });
+        textarea.value = f.value ?? '';
+        return el('label', { class: 'modal-field' }, [f.label, textarea]);
+      }
       const attrs = {
         type: f.type || 'text',
         value: f.value ?? '',
@@ -97,6 +106,72 @@ export function openModal({ title, fields = [], confirmLabel = 'OK', cancelLabel
     document.body.appendChild(overlay);
     const firstInput = card.querySelector('input');
     if (firstInput) firstInput.focus();
+  });
+}
+
+// Modal com checkboxes pra selecionar vários itens de uma vez (ex: escolher
+// vários exercícios do banco pra adicionar numa rotina de uma vez).
+export function pickManyModal({ title, options, confirmLabel = 'Adicionar', cancelLabel = 'Cancelar' }) {
+  return new Promise((resolve) => {
+    const overlay = el('div', { class: 'modal-overlay' });
+    const selected = new Set();
+
+    const close = (result) => {
+      overlay.remove();
+      resolve(result);
+    };
+
+    const confirmBtn = el(
+      'button',
+      { class: 'btn primary', onclick: () => close([...selected]) },
+      `${confirmLabel} (0)`
+    );
+    confirmBtn.disabled = true;
+
+    function updateConfirmLabel() {
+      confirmBtn.textContent = `${confirmLabel} (${selected.size})`;
+      confirmBtn.disabled = selected.size === 0;
+    }
+
+    const listEl = el('div', { class: 'picker-list' });
+
+    function renderOptions(filterText) {
+      listEl.innerHTML = '';
+      const filtered = filterText
+        ? options.filter((opt) => opt.label.toLowerCase().includes(filterText.toLowerCase()))
+        : options;
+      if (filtered.length === 0) {
+        listEl.appendChild(el('p', { class: 'muted' }, 'Nada encontrado.'));
+        return;
+      }
+      filtered.forEach((opt) => {
+        const checkbox = el('input', { type: 'checkbox' });
+        checkbox.checked = selected.has(opt.id);
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) selected.add(opt.id);
+          else selected.delete(opt.id);
+          updateConfirmLabel();
+        });
+        const row = el('label', { class: 'picker-row' }, [checkbox, el('span', {}, opt.label)]);
+        listEl.appendChild(row);
+      });
+    }
+    renderOptions('');
+
+    const search = el('input', { type: 'text', placeholder: 'Buscar...', class: 'picker-search' });
+    search.addEventListener('input', () => renderOptions(search.value));
+
+    const card = el('div', { class: 'modal-card' }, [
+      el('h2', {}, title),
+      options.length > 6 ? search : null,
+      listEl,
+      el('div', { class: 'modal-actions' }, [
+        el('button', { class: 'btn ghost', onclick: () => close(null) }, cancelLabel),
+        confirmBtn,
+      ]),
+    ]);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
   });
 }
 

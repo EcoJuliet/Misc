@@ -1,5 +1,5 @@
 import { get, getAll, put, remove } from '../db.js';
-import { el, uuid, nowIso, openModal, confirmModal } from '../utils.js';
+import { el, uuid, nowIso, openModal, confirmModal, pickManyModal } from '../utils.js';
 import { navigate } from '../router.js';
 
 function formatMeta(item) {
@@ -165,6 +165,52 @@ export async function renderRotinaDetalhe(container, { id }) {
         },
       },
       '+ Adicionar exercício'
+    )
+  );
+
+  container.appendChild(
+    el(
+      'button',
+      {
+        class: 'btn full',
+        onclick: async () => {
+          const alreadyInRoutine = new Set(items.map((item) => item.exerciseId));
+          const options = allExercises
+            .filter((e) => !alreadyInRoutine.has(e.id))
+            .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+            .map((e) => ({ id: e.id, label: e.nome }));
+
+          if (options.length === 0) {
+            await confirmModal('Todos os exercícios do banco já estão nessa rotina, ou o banco está vazio.', 'Ok');
+            return;
+          }
+
+          const selectedIds = await pickManyModal({
+            title: 'Escolher do banco',
+            options,
+            confirmLabel: 'Adicionar',
+          });
+          if (!selectedIds || selectedIds.length === 0) return;
+
+          let ordem = items.length;
+          for (const exerciseId of selectedIds) {
+            const item = {
+              id: uuid(),
+              routineId: id,
+              exerciseId,
+              ordem: ordem++,
+              targetSets: 0,
+              targetRepsMin: 0,
+              targetRepsMax: 0,
+              targetRestSeconds: 60,
+            };
+            await put('routineExercises', item);
+            items.push(item);
+          }
+          renderList();
+        },
+      },
+      '📚 Escolher do banco'
     )
   );
 
