@@ -1,4 +1,4 @@
-const CACHE_NAME = 'treino-v1';
+const CACHE_NAME = 'treino-v2';
 const SHELL_ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const SHELL_ASSETS = [
   './js/views/sessao.js',
   './js/views/historico.js',
   './js/views/backupView.js',
+  './js/views/banco.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',

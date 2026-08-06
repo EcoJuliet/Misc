@@ -396,7 +396,8 @@ button {
   color: var(--muted);
 }
 
-.modal-field input {
+.modal-field input,
+.modal-field textarea {
   min-height: 46px;
   border-radius: 10px;
   border: 1px solid var(--border);
@@ -404,6 +405,11 @@ button {
   color: var(--text);
   padding: 10px 12px;
   font-size: 1rem;
+  font-family: inherit;
+}
+
+.modal-field textarea {
+  resize: vertical;
 }
 
 .modal-actions {
@@ -415,4 +421,40 @@ button {
 .modal-actions .btn {
   flex: 1;
   margin-top: 0;
+}
+
+.picker-search {
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 1rem;
+}
+
+.picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  border-radius: 10px;
+}
+
+.picker-row:active {
+  background: var(--surface-2);
+}
+
+.picker-row input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }

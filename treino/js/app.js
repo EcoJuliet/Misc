@@ -5,6 +5,7 @@ import { renderRotinaDetalhe } from './views/rotinaDetalhe.js';
 import { renderSessaoAtiva, renderSessaoRecap } from './views/sessao.js';
 import { renderHistorico } from './views/historico.js';
 import { renderBackupView } from './views/backupView.js';
+import { renderBanco } from './views/banco.js';
 
 const app = document.getElementById('app');
 
@@ -14,6 +15,7 @@ route('/rotina/:id', (params) => renderRotinaDetalhe(app, params));
 route('/sessao/:id', (params) => renderSessaoRecap(app, params));
 route('/exercicio/:id/historico', (params) => renderHistorico(app, params));
 route('/backup', () => renderBackupView(app));
+route('/banco', () => renderBanco(app));
 
 async function boot() {
   await openDB();

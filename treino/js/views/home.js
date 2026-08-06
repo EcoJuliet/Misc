@@ -11,6 +11,7 @@ export async function renderHome(container) {
   container.appendChild(
     el('header', { class: 'topbar' }, [
       el('h1', {}, 'Treino'),
+      el('button', { class: 'icon-btn', 'aria-label': 'Banco de exercícios', onclick: () => navigate('#/banco') }, '📚'),
       el('button', { class: 'icon-btn', 'aria-label': 'Backup e configurações', onclick: () => navigate('#/backup') }, '⚙️'),
     ])
   );
