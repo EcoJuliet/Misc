@@ -3,8 +3,6 @@ import { el, uuid, nowIso, formatDateTimeBR, clamp, confirmModal, infoModal } fr
 import { navigate } from '../router.js';
 import { bumpSessionsSinceBackup } from '../backup.js';
 
-const WEIGHT_STEP = 2.5;
-
 export async function renderSessaoAtiva(container, { id: routineId }) {
   container.innerHTML = '';
 
@@ -163,36 +161,22 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
       const loggedList = el('div', { class: 'set-log-list' });
       card.appendChild(loggedList);
 
-      const pesoValueEl = el('span', { class: 'stepper-value' }, String(peso));
       const repsValueEl = el('span', { class: 'stepper-value' }, String(reps));
+
+      const pesoInput = el('input', {
+        type: 'number',
+        inputmode: 'decimal',
+        step: '0.5',
+        class: 'weight-input',
+      });
+      pesoInput.value = peso;
+      pesoInput.addEventListener('input', () => {
+        peso = Number(pesoInput.value) || 0;
+      });
 
       card.appendChild(
         el('div', { class: 'stepper-row' }, [
-          el('div', { class: 'stepper' }, [
-            el(
-              'button',
-              {
-                class: 'stepper-btn',
-                onclick: () => {
-                  peso = clamp(peso - WEIGHT_STEP, 0, 500);
-                  pesoValueEl.textContent = peso;
-                },
-              },
-              '−'
-            ),
-            el('div', { class: 'stepper-label' }, [pesoValueEl, el('small', {}, ' kg')]),
-            el(
-              'button',
-              {
-                class: 'stepper-btn',
-                onclick: () => {
-                  peso = clamp(peso + WEIGHT_STEP, 0, 500);
-                  pesoValueEl.textContent = peso;
-                },
-              },
-              '+'
-            ),
-          ]),
+          el('div', { class: 'weight-field' }, [pesoInput, el('small', {}, ' kg')]),
           el('div', { class: 'stepper' }, [
             el(
               'button',
