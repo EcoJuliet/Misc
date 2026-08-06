@@ -175,6 +175,24 @@ export function pickManyModal({ title, options, confirmLabel = 'Adicionar', canc
   });
 }
 
+// Modal só de leitura, pra mostrar a descrição de um exercício.
+export function infoModal(title, text) {
+  return new Promise((resolve) => {
+    const overlay = el('div', { class: 'modal-overlay' });
+    const close = () => {
+      overlay.remove();
+      resolve();
+    };
+    const card = el('div', { class: 'modal-card' }, [
+      el('h2', {}, title),
+      el('p', { class: 'modal-description' }, text),
+      el('div', { class: 'modal-actions' }, [el('button', { class: 'btn primary', onclick: close }, 'Fechar')]),
+    ]);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+  });
+}
+
 export function confirmModal(message, confirmLabel = 'Confirmar') {
   return new Promise((resolve) => {
     const overlay = el('div', { class: 'modal-overlay' });

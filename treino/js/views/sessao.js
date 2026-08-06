@@ -1,5 +1,5 @@
 import { get, getAll, put } from '../db.js';
-import { el, uuid, nowIso, formatDateTimeBR, clamp, confirmModal } from '../utils.js';
+import { el, uuid, nowIso, formatDateTimeBR, clamp, confirmModal, infoModal } from '../utils.js';
 import { navigate } from '../router.js';
 import { bumpSessionsSinceBackup } from '../backup.js';
 
@@ -132,11 +132,16 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
 
     const card = el('section', { class: 'session-card' });
     card.append(
-      el(
-        'button',
-        { class: 'exercise-name-btn', onclick: () => navigate(`#/exercicio/${item.exerciseId}/historico`) },
-        exercise ? exercise.nome : '(exercício removido)'
-      ),
+      el('div', { class: 'exercise-title-row' }, [
+        el(
+          'button',
+          { class: 'exercise-name-btn', onclick: () => navigate(`#/exercicio/${item.exerciseId}/historico`) },
+          exercise ? exercise.nome : '(exercício removido)'
+        ),
+        exercise && exercise.descricao
+          ? el('button', { class: 'icon-btn', onclick: () => infoModal(exercise.nome, exercise.descricao) }, 'ℹ️')
+          : null,
+      ]),
       el('span', { class: 'muted' }, `Meta: ${item.targetSets}x${item.targetRepsMin}${item.targetRepsMax !== item.targetRepsMin ? '-' + item.targetRepsMax : ''}`)
     );
 

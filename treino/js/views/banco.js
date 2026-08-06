@@ -1,5 +1,5 @@
 import { get, getAll, put, remove } from '../db.js';
-import { el, uuid, nowIso, openModal, confirmModal } from '../utils.js';
+import { el, uuid, nowIso, openModal, confirmModal, infoModal } from '../utils.js';
 import { navigate } from '../router.js';
 
 export async function renderBanco(container) {
@@ -22,7 +22,11 @@ export async function renderBanco(container) {
       el('button', { class: 'icon-btn', onclick: () => navigate('#/') }, '←'),
       el('h1', {}, 'Banco de exercícios'),
     ]),
-    el('p', { class: 'muted' }, 'Renomeie, apague ou cole uma lista pra criar vários de uma vez.')
+    el(
+      'p',
+      { class: 'muted' },
+      'Renomeie, apague ou cole uma lista pra criar vários de uma vez. Toque no nome pra ver/editar a descrição.'
+    )
   );
 
   const list = el('div', { class: 'exercise-list' });
@@ -37,7 +41,12 @@ export async function renderBanco(container) {
     exercises.forEach((exercise) => {
       list.appendChild(
         el('div', { class: 'exercise-row' }, [
-          el('span', { class: 'exercise-name-btn' }, exercise.nome),
+          el(
+            'button',
+            { class: 'exercise-name-btn', onclick: () => renameExercise(exercise) },
+            exercise.nome
+          ),
+          exercise.descricao ? el('span', { class: 'muted exercise-desc-preview' }, exercise.descricao) : null,
           el('div', { class: 'row-actions' }, [
             el('button', { class: 'icon-btn', onclick: () => renameExercise(exercise) }, '✏️'),
             el('button', { class: 'icon-btn danger', onclick: () => deleteExercise(exercise) }, '🗑️'),
@@ -50,12 +59,16 @@ export async function renderBanco(container) {
 
   async function renameExercise(exercise) {
     const result = await openModal({
-      title: 'Renomear exercício',
-      fields: [{ name: 'nome', label: 'Nome', value: exercise.nome }],
+      title: 'Editar exercício',
+      fields: [
+        { name: 'nome', label: 'Nome', value: exercise.nome },
+        { name: 'descricao', label: 'Descrição (opcional)', value: exercise.descricao || '', multiline: true, rows: 4 },
+      ],
       confirmLabel: 'Salvar',
     });
     if (!result || !result.nome) return;
     exercise.nome = result.nome;
+    exercise.descricao = result.descricao || undefined;
     await put('exercises', exercise);
     exercises.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     renderList();
@@ -83,7 +96,10 @@ export async function renderBanco(container) {
         onclick: async () => {
           const result = await openModal({
             title: 'Adicionar exercício',
-            fields: [{ name: 'nome', label: 'Nome do exercício' }],
+            fields: [
+              { name: 'nome', label: 'Nome do exercício' },
+              { name: 'descricao', label: 'Descrição (opcional)', multiline: true, rows: 4 },
+            ],
             confirmLabel: 'Adicionar',
           });
           if (!result || !result.nome) return;
@@ -91,7 +107,7 @@ export async function renderBanco(container) {
             await confirmModal('Já existe um exercício com esse nome no banco.', 'Ok');
             return;
           }
-          const exercise = { id: uuid(), nome: result.nome, createdAt: nowIso() };
+          const exercise = { id: uuid(), nome: result.nome, descricao: result.descricao || undefined, createdAt: nowIso() };
           await put('exercises', exercise);
           exercises.push(exercise);
           exercises.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
@@ -110,27 +126,38 @@ export async function renderBanco(container) {
         onclick: async () => {
           const result = await openModal({
             title: 'Colar lista de exercícios',
-            fields: [{ name: 'lista', label: 'Um nome por linha', multiline: true, rows: 10 }],
+            fields: [
+              {
+                name: 'lista',
+                label: 'Um por linha — "Nome" ou "Nome | Descrição"',
+                multiline: true,
+                rows: 10,
+              },
+            ],
             confirmLabel: 'Criar',
           });
           if (!result || !result.lista) return;
 
-          const names = result.lista
+          const entries = result.lista
             .split('\n')
             .map((line) => line.trim())
-            .filter(Boolean);
+            .filter(Boolean)
+            .map((line) => {
+              const [nome, ...rest] = line.split('|');
+              return { nome: nome.trim(), descricao: rest.join('|').trim() || undefined };
+            });
 
           const existingLower = new Set(exercises.map((e) => e.nome.toLowerCase()));
           let created = 0;
           let skipped = 0;
-          for (const nome of names) {
+          for (const { nome, descricao } of entries) {
             const key = nome.toLowerCase();
             if (existingLower.has(key)) {
               skipped++;
               continue;
             }
             existingLower.add(key);
-            const exercise = { id: uuid(), nome, createdAt: nowIso() };
+            const exercise = { id: uuid(), nome, descricao, createdAt: nowIso() };
             await put('exercises', exercise);
             exercises.push(exercise);
             created++;

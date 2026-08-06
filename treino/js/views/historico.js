@@ -1,5 +1,5 @@
 import { get, getAll } from '../db.js';
-import { el, formatDateBR } from '../utils.js';
+import { el, formatDateBR, infoModal } from '../utils.js';
 import { navigate } from '../router.js';
 import { renderSparkline } from '../charts.js';
 
@@ -18,6 +18,9 @@ export async function renderHistorico(container, { id }) {
     el('header', { class: 'topbar' }, [
       el('button', { class: 'icon-btn', onclick: () => history.back() }, '←'),
       el('h1', {}, exercise.nome),
+      exercise.descricao
+        ? el('button', { class: 'icon-btn', onclick: () => infoModal(exercise.nome, exercise.descricao) }, 'ℹ️')
+        : null,
     ])
   );
 
