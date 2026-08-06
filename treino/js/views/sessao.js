@@ -14,8 +14,10 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
     return;
   }
 
-  const items = (await getAll('routineExercises', 'routineId', routineId)).sort((a, b) => a.ordem - b.ordem);
-  const exercises = await Promise.all(items.map((item) => get('exercises', item.exerciseId)));
+  let items = (await getAll('routineExercises', 'routineId', routineId)).sort((a, b) => a.ordem - b.ordem);
+  const exerciseById = new Map(
+    (await Promise.all(items.map((item) => get('exercises', item.exerciseId)))).map((ex, i) => [items[i].exerciseId, ex])
+  );
 
   const session = { id: uuid(), routineId, routineNomeSnapshot: routine.nome, startedAt: nowIso(), finishedAt: null };
   await put('sessions', session);
@@ -122,132 +124,148 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
     return values;
   }
 
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const exercise = exercises[i];
-    const defaults = await getLastValues(item.exerciseId);
-    let peso = defaults.peso;
-    let reps = defaults.reps;
-    let setNumber = 1;
+  async function moveItem(index, delta) {
+    const other = index + delta;
+    if (other < 0 || other >= items.length) return;
+    [items[index].ordem, items[other].ordem] = [items[other].ordem, items[index].ordem];
+    [items[index], items[other]] = [items[other], items[index]];
+    await Promise.all([put('routineExercises', items[index]), put('routineExercises', items[other])]);
+    await renderCards();
+  }
 
-    const card = el('section', { class: 'session-card' });
-    card.append(
-      el('div', { class: 'exercise-title-row' }, [
+  async function renderCards() {
+    cardsWrap.innerHTML = '';
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const exercise = exerciseById.get(item.exerciseId);
+      const defaults = await getLastValues(item.exerciseId);
+      let peso = defaults.peso;
+      let reps = defaults.reps;
+      let setNumber = 1;
+
+      const card = el('section', { class: 'session-card' });
+      card.append(
+        el('div', { class: 'exercise-title-row' }, [
+          el(
+            'button',
+            { class: 'exercise-name-btn', onclick: () => navigate(`#/exercicio/${item.exerciseId}/historico`) },
+            exercise ? exercise.nome : '(exercício removido)'
+          ),
+          exercise && exercise.descricao
+            ? el('button', { class: 'icon-btn', onclick: () => infoModal(exercise.nome, exercise.descricao) }, 'ℹ️')
+            : null,
+          el('button', { class: 'icon-btn', disabled: i === 0, onclick: () => moveItem(i, -1) }, '↑'),
+          el('button', { class: 'icon-btn', disabled: i === items.length - 1, onclick: () => moveItem(i, 1) }, '↓'),
+        ]),
+        el('span', { class: 'muted' }, `Meta: ${item.targetSets}x${item.targetRepsMin}${item.targetRepsMax !== item.targetRepsMin ? '-' + item.targetRepsMax : ''}`)
+      );
+
+      const loggedList = el('div', { class: 'set-log-list' });
+      card.appendChild(loggedList);
+
+      const pesoValueEl = el('span', { class: 'stepper-value' }, String(peso));
+      const repsValueEl = el('span', { class: 'stepper-value' }, String(reps));
+
+      card.appendChild(
+        el('div', { class: 'stepper-row' }, [
+          el('div', { class: 'stepper' }, [
+            el(
+              'button',
+              {
+                class: 'stepper-btn',
+                onclick: () => {
+                  peso = clamp(peso - WEIGHT_STEP, 0, 500);
+                  pesoValueEl.textContent = peso;
+                },
+              },
+              '−'
+            ),
+            el('div', { class: 'stepper-label' }, [pesoValueEl, el('small', {}, ' kg')]),
+            el(
+              'button',
+              {
+                class: 'stepper-btn',
+                onclick: () => {
+                  peso = clamp(peso + WEIGHT_STEP, 0, 500);
+                  pesoValueEl.textContent = peso;
+                },
+              },
+              '+'
+            ),
+          ]),
+          el('div', { class: 'stepper' }, [
+            el(
+              'button',
+              {
+                class: 'stepper-btn',
+                onclick: () => {
+                  reps = clamp(reps - 1, 0, 100);
+                  repsValueEl.textContent = reps;
+                },
+              },
+              '−'
+            ),
+            el('div', { class: 'stepper-label' }, [repsValueEl, el('small', {}, ' reps')]),
+            el(
+              'button',
+              {
+                class: 'stepper-btn',
+                onclick: () => {
+                  reps = clamp(reps + 1, 0, 100);
+                  repsValueEl.textContent = reps;
+                },
+              },
+              '+'
+            ),
+          ]),
+        ])
+      );
+
+      card.appendChild(
         el(
           'button',
-          { class: 'exercise-name-btn', onclick: () => navigate(`#/exercicio/${item.exerciseId}/historico`) },
-          exercise ? exercise.nome : '(exercício removido)'
-        ),
-        exercise && exercise.descricao
-          ? el('button', { class: 'icon-btn', onclick: () => infoModal(exercise.nome, exercise.descricao) }, 'ℹ️')
-          : null,
-      ]),
-      el('span', { class: 'muted' }, `Meta: ${item.targetSets}x${item.targetRepsMin}${item.targetRepsMax !== item.targetRepsMin ? '-' + item.targetRepsMax : ''}`)
-    );
-
-    const loggedList = el('div', { class: 'set-log-list' });
-    card.appendChild(loggedList);
-
-    const pesoValueEl = el('span', { class: 'stepper-value' }, String(peso));
-    const repsValueEl = el('span', { class: 'stepper-value' }, String(reps));
-
-    card.appendChild(
-      el('div', { class: 'stepper-row' }, [
-        el('div', { class: 'stepper' }, [
-          el(
-            'button',
-            {
-              class: 'stepper-btn',
-              onclick: () => {
-                peso = clamp(peso - WEIGHT_STEP, 0, 500);
-                pesoValueEl.textContent = peso;
-              },
+          {
+            class: 'btn primary full',
+            onclick: async () => {
+              const entry = {
+                id: uuid(),
+                sessionId: session.id,
+                exerciseId: item.exerciseId,
+                exerciseNomeSnapshot: exercise ? exercise.nome : '',
+                numeroSerie: setNumber++,
+                peso,
+                reps,
+                loggedAt: nowIso(),
+              };
+              await put('setLogs', entry);
+              loggedList.appendChild(el('div', { class: 'set-log-row' }, `Série ${entry.numeroSerie}: ${entry.peso}kg × ${entry.reps}`));
+              if (item.targetRestSeconds) startRestTimer(item.targetRestSeconds);
             },
-            '−'
-          ),
-          el('div', { class: 'stepper-label' }, [pesoValueEl, el('small', {}, ' kg')]),
-          el(
-            'button',
-            {
-              class: 'stepper-btn',
-              onclick: () => {
-                peso = clamp(peso + WEIGHT_STEP, 0, 500);
-                pesoValueEl.textContent = peso;
-              },
-            },
-            '+'
-          ),
-        ]),
-        el('div', { class: 'stepper' }, [
-          el(
-            'button',
-            {
-              class: 'stepper-btn',
-              onclick: () => {
-                reps = clamp(reps - 1, 0, 100);
-                repsValueEl.textContent = reps;
-              },
-            },
-            '−'
-          ),
-          el('div', { class: 'stepper-label' }, [repsValueEl, el('small', {}, ' reps')]),
-          el(
-            'button',
-            {
-              class: 'stepper-btn',
-              onclick: () => {
-                reps = clamp(reps + 1, 0, 100);
-                repsValueEl.textContent = reps;
-              },
-            },
-            '+'
-          ),
-        ]),
-      ])
-    );
+          },
+          '✓ Registrar série'
+        )
+      );
 
-    card.appendChild(
-      el(
+      let concluido = false;
+      const concluirBtn = el(
         'button',
         {
-          class: 'btn primary full',
-          onclick: async () => {
-            const entry = {
-              id: uuid(),
-              sessionId: session.id,
-              exerciseId: item.exerciseId,
-              exerciseNomeSnapshot: exercise ? exercise.nome : '',
-              numeroSerie: setNumber++,
-              peso,
-              reps,
-              loggedAt: nowIso(),
-            };
-            await put('setLogs', entry);
-            loggedList.appendChild(el('div', { class: 'set-log-row' }, `Série ${entry.numeroSerie}: ${entry.peso}kg × ${entry.reps}`));
-            if (item.targetRestSeconds) startRestTimer(item.targetRestSeconds);
+          class: 'btn ghost full',
+          onclick: () => {
+            concluido = !concluido;
+            card.classList.toggle('session-card-done', concluido);
+            concluirBtn.textContent = concluido ? '↺ Reabrir exercício' : '✓ Concluir exercício';
           },
         },
-        '✓ Registrar série'
-      )
-    );
+        '✓ Concluir exercício'
+      );
+      card.appendChild(concluirBtn);
 
-    let concluido = false;
-    const concluirBtn = el(
-      'button',
-      {
-        class: 'btn ghost full',
-        onclick: () => {
-          concluido = !concluido;
-          card.classList.toggle('session-card-done', concluido);
-          concluirBtn.textContent = concluido ? '↺ Reabrir exercício' : '✓ Concluir exercício';
-        },
-      },
-      '✓ Concluir exercício'
-    );
-    card.appendChild(concluirBtn);
-
-    cardsWrap.appendChild(card);
+      cardsWrap.appendChild(card);
+    }
   }
+
+  await renderCards();
 
   container.appendChild(
     el(
