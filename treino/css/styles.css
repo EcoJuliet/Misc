@@ -320,6 +320,14 @@ button {
   margin-top: 8px;
 }
 
+.session-card-done {
+  opacity: 0.5;
+}
+
+.session-card-done .exercise-name-btn {
+  text-decoration: line-through;
+}
+
 .timer-bar {
   position: sticky;
   top: 76px;

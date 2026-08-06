@@ -231,6 +231,21 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
       )
     );
 
+    let concluido = false;
+    const concluirBtn = el(
+      'button',
+      {
+        class: 'btn ghost full',
+        onclick: () => {
+          concluido = !concluido;
+          card.classList.toggle('session-card-done', concluido);
+          concluirBtn.textContent = concluido ? '↺ Reabrir exercício' : '✓ Concluir exercício';
+        },
+      },
+      '✓ Concluir exercício'
+    );
+    card.appendChild(concluirBtn);
+
     cardsWrap.appendChild(card);
   }
 
