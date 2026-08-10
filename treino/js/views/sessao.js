@@ -17,8 +17,14 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
     (await Promise.all(items.map((item) => get('exercises', item.exerciseId)))).map((ex, i) => [items[i].exerciseId, ex])
   );
 
-  const session = { id: uuid(), routineId, routineNomeSnapshot: routine.nome, startedAt: nowIso(), finishedAt: null };
-  await put('sessions', session);
+  const openSessions = (await getAll('sessions', 'routineId', routineId)).filter((s) => !s.finishedAt);
+  let session = openSessions.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt))[0];
+  if (session) {
+    if (!session.concluidos) session.concluidos = [];
+  } else {
+    session = { id: uuid(), routineId, routineNomeSnapshot: routine.nome, startedAt: nowIso(), finishedAt: null, concluidos: [] };
+    await put('sessions', session);
+  }
 
   let wakeLock = null;
   async function acquireWakeLock() {
@@ -136,10 +142,16 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const exercise = exerciseById.get(item.exerciseId);
-      const defaults = await getLastValues(item.exerciseId);
+      const existingLogs = (await getAll('setLogs', 'sessionId', session.id))
+        .filter((l) => l.exerciseId === item.exerciseId)
+        .sort((a, b) => a.numeroSerie - b.numeroSerie);
+      const lastThisSession = existingLogs[existingLogs.length - 1];
+      const defaults = lastThisSession
+        ? { peso: lastThisSession.peso, reps: lastThisSession.reps }
+        : await getLastValues(item.exerciseId);
       let peso = defaults.peso;
       let reps = defaults.reps;
-      let setNumber = 1;
+      let setNumber = existingLogs.length + 1;
 
       const card = el('section', { class: 'session-card' });
       card.append(
@@ -159,6 +171,9 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
       );
 
       const loggedList = el('div', { class: 'set-log-list' });
+      existingLogs.forEach((entry) => {
+        loggedList.appendChild(el('div', { class: 'set-log-row' }, `Série ${entry.numeroSerie}: ${entry.peso}kg × ${entry.reps}`));
+      });
       card.appendChild(loggedList);
 
       const repsValueEl = el('span', { class: 'stepper-value' }, String(reps));
@@ -230,19 +245,26 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
         )
       );
 
-      let concluido = false;
+      let concluido = session.concluidos.includes(item.exerciseId);
       const concluirBtn = el(
         'button',
         {
           class: 'btn ghost full',
-          onclick: () => {
+          onclick: async () => {
             concluido = !concluido;
+            if (concluido) {
+              if (!session.concluidos.includes(item.exerciseId)) session.concluidos.push(item.exerciseId);
+            } else {
+              session.concluidos = session.concluidos.filter((id) => id !== item.exerciseId);
+            }
+            await put('sessions', session);
             card.classList.toggle('session-card-done', concluido);
             concluirBtn.textContent = concluido ? '↺ Reabrir exercício' : '✓ Concluir exercício';
           },
         },
-        '✓ Concluir exercício'
+        concluido ? '↺ Reabrir exercício' : '✓ Concluir exercício'
       );
+      if (concluido) card.classList.add('session-card-done');
       card.appendChild(concluirBtn);
 
       cardsWrap.appendChild(card);
