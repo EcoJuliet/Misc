@@ -1,10 +1,11 @@
-name: Deploy Treino to GitHub Pages
+name: Deploy Pages
 
 on:
   push:
     branches:
       - master
       - claude/gym-workout-app-tif2hz
+      - claude/study-site-kgqgo5
   workflow_dispatch:
 
 permissions:
@@ -24,9 +25,15 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Build combined site
+        run: |
+          mkdir -p dist
+          cp .github/pages/index.html dist/index.html
+          cp -r treino dist/treino
+          cp -r tantra-estudo dist/tantra-estudo
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: treino
+          path: dist
       - id: deployment
         uses: actions/deploy-pages@v4
