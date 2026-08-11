@@ -5,18 +5,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ecojuliet/misc</title>
 <style>
-  :root{ color-scheme: light dark; }
-  body{ font-family: -apple-system, system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1.5rem; line-height: 1.6; }
+  :root{
+    color-scheme: light dark;
+    --bg: #f5f5f4;
+    --card-bg: #ffffff;
+    --border: #e2e0dc;
+    --text: #1f1d1a;
+    --muted: #6b675f;
+    --accent: #2f6b4f;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #17181a;
+      --card-bg: #232426;
+      --border: #34363a;
+      --text: #eceae6;
+      --muted: #a4a099;
+      --accent: #6fbf94;
+    }
+  }
+  *{ box-sizing: border-box; }
+  body{
+    font-family: -apple-system, system-ui, sans-serif;
+    max-width: 40rem;
+    margin: 4rem auto;
+    padding: 0 1.5rem;
+    line-height: 1.6;
+    background: var(--bg);
+    color: var(--text);
+  }
   h1{ font-size: 1.3rem; }
-  ul{ padding-left: 1.2rem; }
-  a{ color: inherit; }
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+  .card{
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 0.4rem;
+    padding: 1.25rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    border-color: var(--accent);
+  }
+  .card strong{
+    font-size: 1.1rem;
+  }
+  .card span{
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
 </style>
 </head>
 <body>
   <h1>ecojuliet/misc</h1>
-  <ul>
-    <li><a href="./treino/">treino</a> — app de treino</li>
-    <li><a href="./tantra-estudo/">tantra-estudo</a> — curso de tantra em 12 aulas</li>
-  </ul>
+  <div class="grid">
+    <a class="card" href="./treino/">
+      <strong>treino</strong>
+      <span>app de treino</span>
+    </a>
+    <a class="card" href="./tantra-estudo/">
+      <strong>tantra-estudo</strong>
+      <span>curso de tantra em 12 aulas</span>
+    </a>
+  </div>
 </body>
 </html>
