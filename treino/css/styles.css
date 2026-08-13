@@ -277,6 +277,19 @@ button {
 .set-log-row {
   font-size: 0.9rem;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.set-log-remove {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 0.9rem;
+  padding: 4px 8px;
+  line-height: 1;
 }
 
 .stepper-row {
@@ -354,9 +367,13 @@ button {
 }
 
 .timer-bar {
-  position: sticky;
-  top: 76px;
-  z-index: 4;
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 448px;
+  margin: 0 auto;
+  z-index: 15;
   background: var(--primary-dark);
   color: #fff;
   border-radius: var(--radius);
@@ -364,7 +381,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .timer-bar .btn.ghost {

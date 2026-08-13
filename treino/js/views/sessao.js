@@ -1,4 +1,4 @@
-import { get, getAll, put } from '../db.js';
+import { get, getAll, put, remove } from '../db.js';
 import { el, uuid, nowIso, formatDateTimeBR, clamp, confirmModal, infoModal } from '../utils.js';
 import { navigate } from '../router.js';
 import { bumpSessionsSinceBackup } from '../backup.js';
@@ -171,9 +171,25 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
       );
 
       const loggedList = el('div', { class: 'set-log-list' });
-      existingLogs.forEach((entry) => {
-        loggedList.appendChild(el('div', { class: 'set-log-row' }, `Série ${entry.numeroSerie}: ${entry.peso}kg × ${entry.reps}`));
-      });
+      function appendSetLogRow(entry) {
+        const row = el('div', { class: 'set-log-row' }, [
+          el('span', {}, `Série ${entry.numeroSerie}: ${entry.peso}kg × ${entry.reps}`),
+          el(
+            'button',
+            {
+              class: 'set-log-remove',
+              'aria-label': 'Apagar série',
+              onclick: async () => {
+                await remove('setLogs', entry.id);
+                row.remove();
+              },
+            },
+            '✕'
+          ),
+        ]);
+        loggedList.appendChild(row);
+      }
+      existingLogs.forEach(appendSetLogRow);
       card.appendChild(loggedList);
 
       const repsValueEl = el('span', { class: 'stepper-value' }, String(reps));
@@ -220,30 +236,29 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
         ])
       );
 
-      card.appendChild(
-        el(
-          'button',
-          {
-            class: 'btn primary full',
-            onclick: async () => {
-              const entry = {
-                id: uuid(),
-                sessionId: session.id,
-                exerciseId: item.exerciseId,
-                exerciseNomeSnapshot: exercise ? exercise.nome : '',
-                numeroSerie: setNumber++,
-                peso,
-                reps,
-                loggedAt: nowIso(),
-              };
-              await put('setLogs', entry);
-              loggedList.appendChild(el('div', { class: 'set-log-row' }, `Série ${entry.numeroSerie}: ${entry.peso}kg × ${entry.reps}`));
-              if (item.targetRestSeconds) startRestTimer(item.targetRestSeconds);
-            },
+      const registerBtn = el(
+        'button',
+        {
+          class: 'btn primary full',
+          onclick: async () => {
+            const entry = {
+              id: uuid(),
+              sessionId: session.id,
+              exerciseId: item.exerciseId,
+              exerciseNomeSnapshot: exercise ? exercise.nome : '',
+              numeroSerie: setNumber++,
+              peso,
+              reps,
+              loggedAt: nowIso(),
+            };
+            await put('setLogs', entry);
+            appendSetLogRow(entry);
+            if (item.targetRestSeconds) startRestTimer(item.targetRestSeconds);
           },
-          '✓ Registrar série'
-        )
+        },
+        '✓ Registrar série'
       );
+      card.appendChild(registerBtn);
 
       let concluido = session.concluidos.includes(item.exerciseId);
       const concluirBtn = el(
@@ -259,12 +274,16 @@ export async function renderSessaoAtiva(container, { id: routineId }) {
             }
             await put('sessions', session);
             card.classList.toggle('session-card-done', concluido);
+            registerBtn.disabled = concluido;
             concluirBtn.textContent = concluido ? '↺ Reabrir exercício' : '✓ Concluir exercício';
           },
         },
         concluido ? '↺ Reabrir exercício' : '✓ Concluir exercício'
       );
-      if (concluido) card.classList.add('session-card-done');
+      if (concluido) {
+        card.classList.add('session-card-done');
+        registerBtn.disabled = true;
+      }
       card.appendChild(concluirBtn);
 
       cardsWrap.appendChild(card);
